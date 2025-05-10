@@ -1,0 +1,79 @@
+Podan imamo graf $G = (V,E)$, z množico vozlišč $V=\{v_0,\ldots,v_{n-1}\}$. Definiramo množico vžigalic $S:=\{s_0,\ldots,s_{m-1}\}$, kjer je $|E| = m$. Množico krajišč vžigalic imenujemo $U$. Vsaka vžigalico $s_i$ predstavlja par različnih vozlišč $\{u_i,u'_{i,2}\}$, $u_i, u'_{i,2} \in U$, torej $|U| = 2m$. Definiramo tudi dve  množici barv $C_0 = \{0,1,\ldots,c \}$ za vozlišča in $C_1 = \{1, \ldots, c\}$ za krajišča vžigalic, za nek $c \in \mathbb{Z}^+$. Vsak $v\in V$ je pobarvan s barvanjem $c_0 : V \rightarrow C_0$ in vsak $u \in U$ je pobarvan s barvanjem $c_1: U \rightarrow C_1 $. Pravimo, da $v\in V$ ni pobarvan, če $c_0(v)=0$. Vhod za uganko \textbf{Matching match} je torej $(G,S,c,C_0,C_1)$. Cilj je določiti preslikavo $M: U \rightarrow V$, ki ustreza nasledjim pogojem
+\begin{enumerate}
+    \item Vsaka vžigalica $s_i = (u_i,u'_{i,2})$ povezuje dve vozlišči v grafu, torej $\{M(u_i),M(u'_{i,2})\} \in E$.2
+    \item Barva koncev vžigalice se ujema z barvo vozlišča ali pa je vozlišče neobarvano.
+    \item Vsaka povezavo v grafu je pokrita z vsaj eno vžigalico.
+    \item Če je vozlišče neobarvano, morajo vse nanj vezane vžigalice imeti enako barvo.
+\end{enumerate}
+Uganka nas torej vpraša ali obstaja izvedljiva preslikava $M$, za podan primer $(G,S,c,C_0,C_1)$. 
+
+V tem delu smo implementirali algoritme s polinomsko časovno zahtevnostjo.
+\subsection{Complete graph algorithm}
+\subsubsection{Naključna generacija problema}
+Za generiranje tovrstnih problemov smo najprej generiramo rešitev in potem izluščimo problem.
+To nam zagotovi rešljivost, ne pa zagotovi enoličnosti rešitve. Najprej generiramo naključno $n$ vozlišc, za vsako vozlišče naključno barvo in nato reindeksiramo barve, da si sledijo po vrsti (naključno barvanje lahko spusti barvo).
+
+
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\KwIn{Dana instanca problema $(G, S, c, C0, C1)$}
+\KwOut{Preslikava $N: E \rightarrow S$, ki vsakemy robu $e \in E$ dodeli vžigalico $s \in S$}
+\SetKwFunction{FMain}{solve\_complete\_graph\_puzzle}
+\SetKwProg{Fn}{Function}{:}{}
+\Fn{\FMain{$G$, $S$, $c$, $C0$, $C1$}}{
+    \tcp{Count occurrences of each color}
+    $c^{(m)} \gets [0, 0, \ldots, 0]$ of length $|S|$
+    \ForEach{$i, match\_stick \in match\_sticks)$}{
+        increment $matchstick\_color\_count[match\_stick.color1]$\;
+        increment $matchstick\_color\_count[match\_stick.color2]$\;
+        add $i$ to $matchsticks\_by\_colors[match\_stick.color1][match\_stick.color2]$\;
+        \If{$match\_stick.color1 \ne match\_stick.color2$}{
+            add $i$ to $matchsticks\_by\_colors[match\_stick.color2][match\_stick.color1]$\;
+        }
+    }
+    
+    \tcp{Compute maximum number of times each color can appear}
+    \ForEach{$color \in matchstick\_color\_count$}{
+        $max\_color\_count[color] \gets matchstick\_color\_count[color] / (|puzzle\_copy.graph.nodes| - 1)$\;
+    }
+    
+    $graph\_color\_count \gets \{\}$\;
+    $uncolored\_nodes \gets [\,]$\;
+    \ForEach{$node \in puzzle\_copy.graph.nodes$}{
+        \eIf{$node.color = 0$}{
+            append $node$ to $uncolored\_nodes$\;
+        }{
+            increment $graph\_color\_count[node.color]$\;
+        }
+    }
+    
+    $colors\_to\_distribute \gets [\,]$\;
+    \ForEach{$color \in puzzle\_copy.colors$}{
+        $available \gets max\_color\_count[color] - graph\_color\_count.get(color, 0)$\;
+        \If{$available > 0$}{
+            append $color$ to $colors\_to\_distribute$ $int(available)$ times\;
+        }
+    }
+    
+    \tcp{Color the uncolored nodes}
+    \ForEach{$node \in uncolored\_nodes$}{
+        \If{$colors\_to\_distribute$ is empty}{
+            break\;
+        }
+        $node.color \gets colors\_to\_distribute.pop()$\;
+    }
+    
+    \tcp{Assign matchsticks to edges}
+    \ForEach{$i, edge \in enumerate(puzzle\_copy.edges)$}{
+        $c1 \gets edge.node1.color$\;
+        $c2 \gets edge.node2.color$\;
+        $idx \gets matchsticks\_by\_colors[c1][c2].pop()$\;
+        $edge\_to\_match\_stick\_idx[i] \gets idx$\;
+        \If{$c1 \ne c2$}{
+            remove $idx$ from $matchsticks\_by\_colors[c2][c1]$\;
+        }
+    }
+    
+    \Return $PuzzleSolution(puzzle, edge\_to\_match\_stick\_idx)$\;
+}
+\caption{Reši problem (G, S, c, C0, C1) v polinomskem času $O(n+m)$}
